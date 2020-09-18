@@ -1,4 +1,6 @@
 import sqlite3
+import traceback
+
 from flask_restful import Resource, reqparse
 from flask_jwt import jwt_required
 from models.item import ItemModel
@@ -30,8 +32,9 @@ class Item(Resource):
         data = Item.parser.parse_args()
         item = ItemModel(name, data['price'])
         try:
-            item.insert()
-        except:
+            item.save_to_db()
+        except Exception as e:
+            traceback.print_exc()
             return {
                        "message": "An error occurred inserting the item."
                    }, 500
@@ -39,14 +42,9 @@ class Item(Resource):
         return item.json(), 201
 
     def delete(self, name):
-        conn = sqlite3.connect('db/data.db')
-        cursor = conn.cursor()
-
-        query = "DELETE FROM items WHERE name=?"
-        cursor.execute(query, (name,))
-
-        conn.commit()
-        conn.close()
+        item = ItemModel.find_by_name(name)
+        if item:
+            item.delete_from_db()
         return {
             'message': 'Item deleted'
         }
@@ -54,28 +52,20 @@ class Item(Resource):
     def put(self, name):
         data = Item.parser.parse_args()
         item = ItemModel.find_by_name(name)
-        updated_item = ItemModel(name, data['price'])
 
         if item is None:
-            try:
-                updated_item.insert()
-            except:
-                return {
-                           "message": "An error occurred inserting the item"
-                       }, 500
+            item = ItemModel(name, data['price'])
         else:
-            try:
-                updated_item.update()
-            except:
-                return {
-                           "message": "An error occurred updating the item"
-                       }, 500
-        return updated_item.json()
+            item.price = data['price']
+
+        item.save_to_db()
+
+        return item.json()
 
 
 class ItemList(Resource):
     def get(self):
-        conn = sqlite3.connect('db/data.db')
+        conn = sqlite3.connect('database/data.db')
         cursor = conn.cursor()
 
         query = "SELECT * FROM items"
