@@ -24,7 +24,7 @@ class ItemModel(db.Model):
             name=name).first()  # select * from items where name = name limit 1
 
     def save_to_db(self):
-        db.session.add(self)w
+        db.session.add(self)
         db.session.commit()
 
     def delete_from_db(self):

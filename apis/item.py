@@ -1,8 +1,8 @@
-import sqlite3
 import traceback
 
-from flask_restful import Resource, reqparse
 from flask_jwt import jwt_required
+from flask_restful import Resource, reqparse
+
 from models.item import ItemModel
 
 
@@ -65,18 +65,7 @@ class Item(Resource):
 
 class ItemList(Resource):
     def get(self):
-        conn = sqlite3.connect('database/data.db')
-        cursor = conn.cursor()
-
-        query = "SELECT * FROM items"
-        result = cursor.execute(query)
-        items = []
-        for row in result:
-            items.append({
-                'name': row[0],
-                'price': row[1]
-            })
-        conn.close()
         return {
-            'items': items
+            'items': [item.json() for item in ItemModel.query.all()]
         }
+        # return {'items': list(map(lambda x: x.json(), ItemModel.query.all()))}
